@@ -8,7 +8,7 @@
     "test": "vitest",
     "prepare": "husky"
   },
-  "lint-staged": {
+  "nano-staged": {
     "**/*": "prettier --write --ignore-unknown"
   },
   "devDependencies": {
@@ -18,7 +18,7 @@
     "globals": "^16.0.0",
     "husky": "^9.1.7",
     "jsdom": "^26.0.0",
-    "lint-staged": "^15.4.3",
+    "nano-staged": "^0.8.0",
     "prettier": "^3.5.1",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.24.1",
