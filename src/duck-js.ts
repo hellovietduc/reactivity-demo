@@ -113,13 +113,15 @@ const effect = (callback: () => void) => {
   scope.pop()
 }
 
-type Component = () => () => string
+type Component = () => () => string | string[]
 
 /**
  * A simple function that mounts a component to an element and rerenders
  * it whenever the signals inside the component change.
  */
-const createApp = (component: Component, root: HTMLElement) => {
+const createApp = (component: Component, root: HTMLElement | null) => {
+  if (!root) throw new Error('Root element not found')
+
   // 1. Call the component to set up its signals and effects. This will return
   //    a render function which can be called to get the HTML string.
   const render = component()
@@ -130,7 +132,8 @@ const createApp = (component: Component, root: HTMLElement) => {
     let firstRender = true
     return () => {
       if (firstRender) {
-        root.innerHTML = render()
+        const html = render()
+        root.innerHTML = Array.isArray(html) ? html.join('') : html
         firstRender = false
         return
       }
@@ -142,7 +145,8 @@ const createApp = (component: Component, root: HTMLElement) => {
       //    If `renderApp` is called synchronously, the computed signal will still
       //    return the old value and the DOM will not be updated correctly.
       queueMicrotask(() => {
-        root.innerHTML = render()
+        const html = render()
+        root.innerHTML = Array.isArray(html) ? html.join('') : html
       })
     }
   })()

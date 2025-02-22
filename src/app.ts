@@ -1,31 +1,5 @@
 import { type Component, createApp, effect, signal } from './duck-js'
-
-declare global {
-  interface Window {
-    fireConfetti: () => void
-  }
-}
-
-const DUCK_SVG = () => {
-  const randomColor = () => {
-    return '#' + Math.floor(Math.random() * 16777215).toString(16)
-  }
-
-  return `<svg width="100" height="100" viewBox="0 0 100 100">
-  <g fill="${randomColor()}">
-    <!-- Body -->
-    <rect x="30" y="40" width="40" height="30"/>
-    <!-- Head -->
-    <rect x="60" y="30" width="20" height="20"/>
-    <!-- Beak -->
-    <rect x="75" y="35" width="15" height="10" fill="${randomColor()}"/>
-    <!-- Eye -->
-    <rect x="65" y="35" width="5" height="5" fill="#000"/>
-    <!-- Wing -->
-    <rect x="35" y="45" width="15" height="15"/>
-  </g>
-</svg>`
-}
+import { DUCK_SVG } from './duck-svg'
 
 const numberOfDucks = signal(1)
 const isLuckyNumber = signal(false)
@@ -45,7 +19,7 @@ const randomizeDucks = () => {
   numberOfDucks.set(Math.floor(Math.random() * (50 - 5 + 1)) + 5)
 }
 
-const App: Component = () => {
+const Ducks: Component = () => {
   effect(() => {
     if (numberOfDucks.get() % 7 === 0) {
       isLuckyNumber.set(true)
@@ -58,7 +32,7 @@ const App: Component = () => {
   return () => {
     return Array.from({ length: numberOfDucks.get() }, () => {
       return `<span class="shrink-0">${DUCK_SVG()}</span>`
-    }).join('')
+    })
   }
 }
 
@@ -71,22 +45,14 @@ const Msg: Component = () => {
   }
 }
 
-const root = document.getElementById('app')
-if (!root) throw new Error('Root element not found')
-createApp(App, root)
-
-const msgRoot = document.getElementById('msg')
-if (!msgRoot) throw new Error('Root element not found')
-createApp(Msg, msgRoot)
+createApp(Ducks, document.getElementById('ducks'))
+createApp(Msg, document.getElementById('msg'))
 
 const moreButton = document.getElementById('more-ducks-btn')
-if (!moreButton) throw new Error('Button element not found')
-moreButton.addEventListener('click', increaseDucks)
+moreButton?.addEventListener('click', increaseDucks)
 
 const lessButton = document.getElementById('less-ducks-btn')
-if (!lessButton) throw new Error('Button element not found')
-lessButton.addEventListener('click', decreaseDucks)
+lessButton?.addEventListener('click', decreaseDucks)
 
 const randomButton = document.getElementById('random-ducks-btn')
-if (!randomButton) throw new Error('Button element not found')
-randomButton.addEventListener('click', randomizeDucks)
+randomButton?.addEventListener('click', randomizeDucks)
