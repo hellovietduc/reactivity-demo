@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+
+a {
+  @apply text-orange-600;
+}
+
+a:hover {
+  @apply underline;
+}
