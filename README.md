@@ -1,6 +1,6 @@
 # duckJS - Reactivity demo
 
-My own exploration of a signal-based reactivity model. Resource for an internal tech talk at @padlet.
+My own exploration of a signal-based reactivity model. Resource for an internal tech talk at [Padlet](https://padlet.com).
 
 ## Example code
 
