@@ -97,18 +97,21 @@ describe('signal with effect', () => {
     const s = signal(1)
     const mock = vi.fn()
 
+    // The effect is called right away.
     effect(() => {
       mock(s.get())
     })
     expect(mock).toBeCalledTimes(1)
 
+    // The effect is called again when the signal changes.
     s.set(43)
     expect(mock).toBeCalledWith(43)
     expect(mock).toBeCalledTimes(2)
 
+    s.set(91)
     s.set(199)
     expect(mock).toBeCalledWith(199)
-    expect(mock).toBeCalledTimes(3)
+    expect(mock).toBeCalledTimes(4)
   })
 
   test('calls the effect only once when the signal is used multiple times', () => {
@@ -130,39 +133,42 @@ describe('signal with effect', () => {
   })
 
   test('handles multiple independent effects', () => {
-    const s = signal(1)
+    const s = signal('hello')
     const mock1 = vi.fn()
     const mock2 = vi.fn()
 
     effect(() => mock1(s.get()))
-    effect(() => mock2(s.get() * 2))
+    effect(() => mock2(s.get() + ' world'))
 
-    expect(mock1).toBeCalledWith(1)
+    expect(mock1).toBeCalledWith('hello')
     expect(mock1).toBeCalledTimes(1)
 
-    expect(mock2).toBeCalledWith(2)
+    expect(mock2).toBeCalledWith('hello world')
     expect(mock2).toBeCalledTimes(1)
 
-    s.set(7)
+    s.set('goodbye')
 
-    expect(mock1).toBeCalledWith(7)
+    expect(mock1).toBeCalledWith('goodbye')
     expect(mock1).toBeCalledTimes(2)
 
-    expect(mock2).toBeCalledWith(14)
+    expect(mock2).toBeCalledWith('goodbye world')
     expect(mock2).toBeCalledTimes(2)
   })
 
   test('effect not triggered when using signal outside effect', () => {
-    const s = signal(1)
+    const s = signal('yes sir')
     const mock = vi.fn()
 
     effect(() => mock(s.get()))
+    expect(mock).toBeCalledWith('yes sir')
     expect(mock).toBeCalledTimes(1)
 
     const value = s.get() // This should not subscribe to the signal
-    expect(value).toBe(1)
+    expect(value).toBe('yes sir')
+    expect(mock).toBeCalledTimes(1)
 
-    s.set(5)
+    s.set('no sir')
+    expect(mock).toBeCalledWith('no sir')
     expect(mock).toBeCalledTimes(2) // Only the effect should be called
   })
 })
