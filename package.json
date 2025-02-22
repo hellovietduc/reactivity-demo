@@ -6,6 +6,7 @@
   "author": "Duc Nguyen <hello@duckwho.codes>",
   "license": "MIT",
   "scripts": {
+    "build": "vite build",
     "dev": "vite",
     "test": "vitest",
     "prepare": "husky"
