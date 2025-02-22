@@ -131,13 +131,17 @@ const createApp = (component: Component, root: HTMLElement) => {
   const renderApp = (() => {
     let firstRender = true
     return () => {
+      // 3. If it's the first render, the render function has to be called synchronously
+      //    in order for `renderApp` function to be registered as a dependency of the
+      //    signals inside the component. If not, `renderApp` will be removed from the
+      //    stack before the signals are accessed.
       if (firstRender) {
         root.innerHTML = render()
         firstRender = false
         return
       }
 
-      // 3. The reason subsequent renders have to be delayed is to allow computed
+      // 4. The reason subsequent renders have to be delayed is to allow computed
       //    signals to be invalidated before the rerender. Imagine a signal have
       //    these methods in its subscriber list: [renderApp, markStale]. When the
       //    signal's `set` method is called, it'll call all the subscribers IN ORDER.
@@ -149,7 +153,7 @@ const createApp = (component: Component, root: HTMLElement) => {
     }
   })()
 
-  // 4. Create a reactive effect. This allows the signals inside the component
+  // 5. Create a reactive effect. This allows the signals inside the component
   //    to add the `renderApp` function to their subscriber list. When the signals
   //    change, the `renderApp` function will be called to update the DOM.
   effect(renderApp)
