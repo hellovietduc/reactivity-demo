@@ -29,20 +29,18 @@ const Ducks: Component = () => {
     }
   })
 
-  return () => {
-    return Array.from({ length: numberOfDucks.get() }, () => {
-      return `<span class="shrink-0">${DUCK_SVG()}</span>`
-    })
-  }
+  return () =>
+    Array.from(
+      { length: numberOfDucks.get() },
+      () => `<span class="shrink-0">${DUCK_SVG()}</span>`,
+    )
 }
 
 const Msg: Component = () => {
-  return () => {
-    if (isLuckyNumber.get()) {
-      return '<div class="text-2xl text-green-500">🎉 Yay! Lucky number! 🎉</div>'
-    }
-    return ''
-  }
+  return () =>
+    isLuckyNumber.get()
+      ? '<div class="text-2xl text-green-500">🎉 Yay! Lucky number! 🎉</div>'
+      : ''
 }
 
 createApp(Ducks, document.getElementById('ducks'))
