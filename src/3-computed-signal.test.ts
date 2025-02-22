@@ -102,7 +102,7 @@ const computed = <T>(callback: () => T) => {
 // -------
 // TESTS
 // -------
-describe('signal with computed', () => {
+describe('computed signal', () => {
   test('computes the value correctly', () => {
     const a = signal([1, 2, 3])
     const b = signal([4, 5, 6])
