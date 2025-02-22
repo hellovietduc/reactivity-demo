@@ -33,3 +33,10 @@ const Msg: Component = () => {
 ```
 
 See the full code in [src/app.ts](./src/app.ts) and [src/duck-js](./src/duck-js.ts).
+
+## Development
+
+This project uses [Vite](https://vite.dev/) and [Vitest](https://vitest.dev/).
+
+- `yarn dev`: Run the demo
+- `yarn test`: Run the tests for the reactivity model
