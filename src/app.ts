@@ -36,7 +36,7 @@ const Ducks: Component = () => {
     )
 }
 
-const Msg: Component = () => {
+const Message: Component = () => {
   return () =>
     isLuckyNumber.get()
       ? '<div class="text-2xl text-green-500">🎉 Yay! Lucky number! 🎉</div>'
@@ -44,7 +44,7 @@ const Msg: Component = () => {
 }
 
 createApp(Ducks, document.getElementById('ducks'))
-createApp(Msg, document.getElementById('msg'))
+createApp(Message, document.getElementById('msg'))
 
 const moreButton = document.getElementById('more-ducks-btn')
 moreButton?.addEventListener('click', increaseDucks)

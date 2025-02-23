@@ -25,7 +25,7 @@ const Ducks: Component = () => {
     )
 }
 
-const Msg: Component = () => {
+const Message: Component = () => {
   return () =>
     isLuckyNumber.get()
       ? '<div class="text-2xl text-green-500">🎉 Yay! Lucky number! 🎉</div>'
