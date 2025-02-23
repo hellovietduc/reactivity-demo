@@ -76,7 +76,7 @@ const computed = <T>(callback: () => T) => {
   const markStale = () => {
     isStale = true
 
-    // Only notify subscribers when the cached value has become stale.
+    // 5. Only notify subscribers when the cached value has become stale.
     subscribers.forEach((callback) => callback())
   }
 
