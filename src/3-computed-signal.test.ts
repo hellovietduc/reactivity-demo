@@ -4,15 +4,15 @@ import { describe, test, expect, vi } from 'vitest'
  * A simple, singleton function stack; with methods to
  * push, pop, and peek.
  */
-class EffectScope {
-  private static instance: EffectScope
+class EffectStack {
+  private static instance: EffectStack
   private stack: (() => void)[] = []
 
-  static getInstance(): EffectScope {
-    if (!EffectScope.instance) {
-      EffectScope.instance = new EffectScope()
+  static getInstance(): EffectStack {
+    if (!EffectStack.instance) {
+      EffectStack.instance = new EffectStack()
     }
-    return EffectScope.instance
+    return EffectStack.instance
   }
 
   push(effect: () => void) {
@@ -38,13 +38,10 @@ const signal = <T>(value: T) => {
     get() {
       // Here's where the automatic dependency tracking happens.
       // 1. Retrieve the current effect from the stack.
-      //    This is why there's a global `EffectScope` to keep track of
+      //    This is why there's a global `EffectStack` to keep track of
       //    all the effects -- we need a way to retrieve the function
       //    that uses this signal in its body.
-      //    In real frameworks, this `EffectScope` is not global and tends
-      //    to tie with component lifecycle to be able to clean up effects
-      //    when needed.
-      const currentEffect = EffectScope.getInstance().peek()
+      const currentEffect = EffectStack.getInstance().peek()
       if (currentEffect) {
         // 2. Add the effect to this signal's subscriber list so that it can
         //    be called when the signal changes.
@@ -84,7 +81,7 @@ const computed = <T>(callback: () => T) => {
 
   return {
     get() {
-      const currentEffect = EffectScope.getInstance().peek()
+      const currentEffect = EffectStack.getInstance().peek()
 
       // 2. If the cached value is still fresh, return it. There's no need to
       //    recompute.
@@ -95,16 +92,16 @@ const computed = <T>(callback: () => T) => {
         return cached
       }
 
-      const scope = EffectScope.getInstance()
+      const stack = EffectStack.getInstance()
 
       // 4. To let this computed signal know that the cached value has become
       //    stale, push the `markStale` function to the stack. This way, when
       //    a signal's `set` method is called, or another computed signal's
       //    `markStale` is called, it'll invalidate the cached value here. The
       //    next time this computed signal is accessed, it'll recompute the value.
-      scope.push(markStale)
+      stack.push(markStale)
       cached = callback()
-      scope.pop()
+      stack.pop()
 
       // 3.
       if (currentEffect) subscribers.add(currentEffect)
@@ -119,16 +116,16 @@ const computed = <T>(callback: () => T) => {
  * Runs the callback and reruns it whenever the signals it depend on change.
  */
 const effect = (callback: () => void) => {
-  const scope = EffectScope.getInstance()
-  // Push the effect to `EffectScope` so signals can retrieve it.
-  scope.push(callback)
+  const stack = EffectStack.getInstance()
+  // Push the effect to `EffectStack` so signals can retrieve it.
+  stack.push(callback)
   // Run the effect right away. Any signal that is used inside the effect
   // will start tracking it (the effect is added to its subscriber list).
   callback()
-  // Pop the effect from `EffectScope` now as automatic dependency tracking
+  // Pop the effect from `EffectStack` now as automatic dependency tracking
   // is done and avoid a case where if a signal is used twice in the same
   // effect, when it changes, the effect is called twice.
-  scope.pop()
+  stack.pop()
 }
 
 // -------
