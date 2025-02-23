@@ -65,31 +65,47 @@ const signal = <T>(value: T) => {
  * and only recomputed when accessed AND its dependencies change.
  */
 const computed = <T>(callback: () => T) => {
+  // 1. Computed signals are more complicated because they are both value
+  //    containers and effects. Specifically, they need to keep track of
+  //    their subscribers and notify them when the value changes. On top
+  //    of that, they need to cache their computation results.
+  const subscribers = new Set<() => void>()
   let cached: T
   let isStale = true
 
   const markStale = () => {
     isStale = true
+
+    // Only notify subscribers when the cached value has become stale.
+    subscribers.forEach((callback) => callback())
   }
 
   return {
     get() {
-      // If the cached value is still fresh, return it. There's no need to
-      // recompute.
+      const currentEffect = EffectScope.getInstance().peek()
+
+      // 2. If the cached value is still fresh, return it. There's no need to
+      //    recompute.
       if (!isStale) {
+        // 3. Always perform dependency tracking, no matter if the value is stale
+        //    or not.
+        if (currentEffect) subscribers.add(currentEffect)
         return cached
       }
 
       const scope = EffectScope.getInstance()
 
-      // To let the computed signal know that the cached value has become
-      // stale, push the `markStale` function to the stack. This way, when
-      // the signal's `set` method is called, it'll invalidate all computed
-      // signals that depend on it. The next time the computed signal is
-      // accessed, it'll recompute the value.
+      // 4. To let this computed signal know that the cached value has become
+      //    stale, push the `markStale` function to the stack. This way, when
+      //    a signal's `set` method is called, or another computed signal's
+      //    `markStale` is called, it'll invalidate the cached value here. The
+      //    next time this computed signal is accessed, it'll recompute the value.
       scope.push(markStale)
       cached = callback()
       scope.pop()
+
+      // 3.
+      if (currentEffect) subscribers.add(currentEffect)
 
       isStale = false
       return cached
