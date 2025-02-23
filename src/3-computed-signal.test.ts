@@ -33,7 +33,7 @@ class EffectStack {
  * Now automatically tracks the effects that depend on it.
  */
 const signal = <T>(value: T) => {
-  const subscribers = new Set<() => void>()
+  const dependencies = new Set<() => void>()
   return {
     get() {
       // Here's where the automatic dependency tracking happens.
@@ -43,18 +43,18 @@ const signal = <T>(value: T) => {
       //    that uses this signal in its body.
       const currentEffect = EffectStack.getInstance().peek()
       if (currentEffect) {
-        // 2. Add the effect to this signal's subscriber list so that it can
+        // 2. Add the effect to this signal's dependency list so that it can
         //    be called when the signal changes.
-        //    `subscribers` is a list (Set) because a signal can have a lot
-        //    of dependencies.
-        subscribers.add(currentEffect)
+        //    `dependencies` is a list (Set) because a signal can have a lot
+        //    of them.
+        dependencies.add(currentEffect)
       }
       return value
     },
     set(newValue: T) {
       value = newValue
-      // Whenever the value changes, notify all the subscribers.
-      subscribers.forEach((callback) => callback())
+      // Whenever the value changes, notify all the dependencies.
+      dependencies.forEach((effect) => effect())
     },
   }
 }
@@ -66,17 +66,17 @@ const signal = <T>(value: T) => {
 const computed = <T>(callback: () => T) => {
   // 1. Computed signals are more complicated because they are both value
   //    containers and effects. Specifically, they need to keep track of
-  //    their subscribers and notify them when the value changes. On top
+  //    their dependencies and notify them when the value changes. On top
   //    of that, they need to cache their computation results.
-  const subscribers = new Set<() => void>()
+  const dependencies = new Set<() => void>()
   let cached: T
   let isStale = true
 
   const markStale = () => {
     isStale = true
 
-    // 5. Only notify subscribers when the cached value has become stale.
-    subscribers.forEach((callback) => callback())
+    // 5. Only notify dependencies when the cached value has become stale.
+    dependencies.forEach((effect) => effect())
   }
 
   return {
@@ -88,7 +88,7 @@ const computed = <T>(callback: () => T) => {
       if (!isStale) {
         // 3. Always perform dependency tracking, no matter if the value is stale
         //    or not.
-        if (currentEffect) subscribers.add(currentEffect)
+        if (currentEffect) dependencies.add(currentEffect)
         return cached
       }
 
@@ -104,7 +104,7 @@ const computed = <T>(callback: () => T) => {
       stack.pop()
 
       // 3.
-      if (currentEffect) subscribers.add(currentEffect)
+      if (currentEffect) dependencies.add(currentEffect)
 
       isStale = false
       return cached
@@ -120,7 +120,7 @@ const effect = (callback: () => void) => {
   // Push the effect to `EffectStack` so signals can retrieve it.
   stack.push(callback)
   // Run the effect right away. Any signal that is used inside the effect
-  // will start tracking it (the effect is added to its subscriber list).
+  // will start tracking it (the effect is added to its dependency list).
   callback()
   // Pop the effect from `EffectStack` now as automatic dependency tracking
   // is done and avoid a case where if a signal is used twice in the same
