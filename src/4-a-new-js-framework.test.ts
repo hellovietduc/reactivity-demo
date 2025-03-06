@@ -137,14 +137,16 @@ type Component = () => () => string
 const createApp = (component: Component, root: HTMLElement) => {
   // 1. Call the component to set up its signals and effects. This will return
   //    a render function which can be called to get the HTML string.
+  //    This follows a simple model:
+  //      view = render(state)
   const render = component()
 
-  // 2. Create a `renderApp` function that is aware of whether it's the first
-  //    render or not.
+  // 2. Create a `renderApp` function that writes the output from `render` to the
+  //    `root` element.
   const renderApp = (() => {
     let firstRender = true
     return () => {
-      // 3. If it's the first render, the render function has to be called synchronously
+      // 4. If it's the first render, the render function has to be called synchronously
       //    in order for `renderApp` function to be registered as a dependency of the
       //    signals inside the component. If not, `renderApp` will be removed from the
       //    stack before the signals are accessed.
@@ -154,7 +156,7 @@ const createApp = (component: Component, root: HTMLElement) => {
         return
       }
 
-      // 4. The reason subsequent renders have to be delayed is to allow computed
+      // 5. The reason subsequent renders have to be delayed is to allow computed
       //    signals to be invalidated before the rerender. Imagine a signal have
       //    these methods in its dependency list: [renderApp, markStale]. When the
       //    signal's `set` method is called, it'll call all the dependencies IN ORDER.
@@ -166,7 +168,7 @@ const createApp = (component: Component, root: HTMLElement) => {
     }
   })()
 
-  // 5. Create a reactive effect. This allows the signals inside the component
+  // 3. Create a reactive effect. This allows all the signals inside the component
   //    to add the `renderApp` function to their dependency list. When the signals
   //    change, the `renderApp` function will be called to update the DOM.
   effect(renderApp)
