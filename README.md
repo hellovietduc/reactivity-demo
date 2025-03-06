@@ -35,6 +35,13 @@ const Message: Component = () => {
 
 See the full code in [src/app.ts](./src/app.ts) and [src/duck-js](./src/duck-js.ts).
 
+## What's missing?
+
+- Handling of conditional dependencies in `computed` and `effect`.
+- Making effects available for garbage collection.
+- A proper templating engine.
+- ... many more
+
 ## Development
 
 This project uses [Vite](https://vite.dev/) and [Vitest](https://vitest.dev/).
