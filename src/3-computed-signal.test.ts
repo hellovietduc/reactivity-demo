@@ -1,8 +1,7 @@
 import { describe, test, expect, vi } from 'vitest'
 
 /**
- * A simple, singleton function stack; with methods to
- * push, pop, and peek.
+ * A simple, singleton stack to keep track of the active effect.
  */
 class EffectStack {
   private static instance: EffectStack
@@ -33,99 +32,94 @@ class EffectStack {
  * Now automatically tracks the effects that depend on it.
  */
 const signal = <T>(value: T) => {
-  const dependencies = new Set<() => void>()
+  const dependents = new Set<() => void>()
   return {
     get() {
-      // Here's where the automatic dependency tracking happens.
-      // 1. Retrieve the current effect from the stack.
-      //    This is why there's a global `EffectStack` to keep track of
-      //    all the effects -- we need a way to retrieve the function
-      //    that uses this signal in its body.
+      // Automatic dependency tracking:
+      // 1. Check if there's an active effect running.
       const currentEffect = EffectStack.getInstance().peek()
       if (currentEffect) {
-        // 2. Add the effect to this signal's dependency list so that it can
-        //    be called when the signal changes.
-        //    `dependencies` is a list (Set) because a signal can have a lot
-        //    of them.
-        dependencies.add(currentEffect)
+        // 2. If yes, add this effect to our dependents.
+        //    Now, this signal knows the effect cares about its value.
+        dependents.add(currentEffect)
       }
       return value
     },
     set(newValue: T) {
+      // Avoid triggering effects if the value hasn't actually changed.
+      if (Object.is(value, newValue)) {
+        return
+      }
       value = newValue
-      // Whenever the value changes, notify all the dependencies.
-      dependencies.forEach((effect) => effect())
+      // Notify all dependent effects that the value has changed.
+      // Use [...dependents] to iterate over a snapshot, avoiding issues
+      // if an effect modifies the dependent set during execution.
+      ;[...dependents].forEach((effect) => effect())
     },
   }
 }
 
 /**
- * A signal that derives its value from other signals. The result is cached,
- * and only recomputed when accessed AND its dependencies change.
+ * Runs the callback immediately and reruns it
+ * whenever any signal read inside the callback changes.
  */
-const computed = <T>(callback: () => T) => {
-  // 1. Computed signals are more complicated because they are both value
-  //    containers and effects. Specifically, they need to keep track of
-  //    their dependencies and notify them when the value changes. On top
-  //    of that, they need to cache their computation results.
-  const dependencies = new Set<() => void>()
+const effect = (callback: () => void) => {
+  const effectWrapper = () => {
+    const stack = EffectStack.getInstance()
+    stack.push(effectWrapper) // Push this wrapper onto the stack
+    try {
+      callback() // Run the actual user code
+    } finally {
+      stack.pop() // Always pop, even if callback throws error
+    }
+  }
+  // Run the effect immediately to establish initial dependencies
+  effectWrapper()
+}
+
+/**
+ * A signal whose value is derived from other signals.
+ * It's lazy, cached, and reactive.
+ */
+const computed = <T>(calculation: () => T) => {
+  // It needs its own value and dependency tracking, like a signal.
   let cached: T
-  let isStale = true
+  const dependents = new Set<() => void>()
+  let isStale = true // Start as stale, needs calculation on first get
 
   const markStale = () => {
     isStale = true
+    // Notify our dependents that we might have changed.
+    ;[...dependents].forEach((effect) => effect())
+  }
 
-    // 5. Only notify dependencies when the cached value has become stale.
-    dependencies.forEach((effect) => effect())
+  const trackAndCalculate = () => {
+    const stack = EffectStack.getInstance()
+    stack.push(markStale) // Signals inside calculation will track `markStale`
+    try {
+      cached = calculation() // Perform the actual calculation
+    } finally {
+      stack.pop()
+    }
+    isStale = false // Value is now fresh
   }
 
   return {
     get() {
+      // Like `signal.get()`, track who depends on this computed.
       const currentEffect = EffectStack.getInstance().peek()
-
-      // 2. If the cached value is still fresh, return it. There's no need to
-      //    recompute.
-      if (!isStale) {
-        // 3. Always perform dependency tracking, no matter if the value is stale
-        //    or not.
-        if (currentEffect) dependencies.add(currentEffect)
-        return cached
+      if (currentEffect) {
+        dependents.add(currentEffect)
       }
 
-      const stack = EffectStack.getInstance()
-
-      // 4. To let this computed signal know that the cached value has become
-      //    stale, push the `markStale` function to the stack. This way, when
-      //    a signal's `set` method is called, or another computed signal's
-      //    `markStale` is called, it'll invalidate the cached value here. The
-      //    next time this computed signal is accessed, it'll recompute the value.
-      stack.push(markStale)
-      cached = callback()
-      stack.pop()
-
-      // 3.
-      if (currentEffect) dependencies.add(currentEffect)
-
-      isStale = false
+      // If stale, recalculate before returning.
+      if (isStale) {
+        trackAndCalculate()
+      }
       return cached
     },
+    // Note: No `set` method for computed signals!
   }
-}
-
-/**
- * Runs the callback and reruns it whenever the signals it depend on change.
- */
-const effect = (callback: () => void) => {
-  const stack = EffectStack.getInstance()
-  // Push the effect to `EffectStack` so signals can retrieve it.
-  stack.push(callback)
-  // Run the effect right away. Any signal that is used inside the effect
-  // will start tracking it (the effect is added to its dependency list).
-  callback()
-  // Pop the effect from `EffectStack` now as automatic dependency tracking
-  // is done and avoid a case where if a signal is used twice in the same
-  // effect, when it changes, the effect is called twice.
-  stack.pop()
 }
 
 // -------
