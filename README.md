@@ -5,16 +5,15 @@ My own exploration of a signal-based reactivity model. Resource for an internal 
 ## Example code
 
 ```ts
+// --- State ---
 const numberOfDucks = signal(1)
-const isLuckyNumber = signal(false)
+const isLuckyNumber = computed(() => numberOfDucks.get() % 7 === 0)
 
+// --- Components
 const Ducks: Component = () => {
   effect(() => {
-    if (numberOfDucks.get() % 7 === 0) {
-      isLuckyNumber.set(true)
+    if (isLuckyNumber.get()) {
       window.fireConfetti()
-    } else {
-      isLuckyNumber.set(false)
     }
   })
 
